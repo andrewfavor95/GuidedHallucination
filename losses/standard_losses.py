@@ -63,14 +63,14 @@ def xform_diff_loss(inputs,outputs,opt,center_coords=True):
 def aspect_ratio_loss(inputs,outputs,opt):
 
 
-    pred = outputs["structure_module"]["final_atom_positions"][:,residue_constants.atom_order["CA"]]
-    
-    
-    s = jnp.linalg.svd(pred - pred.mean(axis=0),full_matrices=True,compute_uv=False)  # singular values of the coordinates
+	pred = outputs["structure_module"]["final_atom_positions"][:,residue_constants.atom_order["CA"]]
+	
+	
+	s = jnp.linalg.svd(pred - pred.mean(axis=0),full_matrices=True,compute_uv=False)  # singular values of the coordinates
 
-    aspect_ratio_loss_val = jnp.std(s[:3])/jnp.mean(s[:3])
-    
-    return {"aspect_ratio_loss": aspect_ratio_loss_val }
+	aspect_ratio_loss_val = jnp.std(s[:3])/jnp.mean(s[:3])
+	
+	return {"aspect_ratio_loss": aspect_ratio_loss_val }
 
 
 
@@ -86,73 +86,73 @@ def domain_contact_loss(inputs,outputs,opt,
 
 
 
-    def dist_potential(x,w=0.075,r=4.8,n=1.5):
-        return ( (w*(x-r))*jnp.log(x/r)  )**n
+	def dist_potential(x,w=0.075,r=4.8,n=1.5):
+		return ( (w*(x-r))*jnp.log(x/r)  )**n
 
 
-    xyz_array = outputs["structure_module"]["final_atom_positions"][:,residue_constants.atom_order["CA"]]
-    copies=af_model._copies
-    chain_len=af_model._len
-    
-    model_dmat = jnp.square(xyz_array[:,None]-xyz_array[None,:]).sum(-1)
-    
-    pair_weight_mat = jnp.ones(model_dmat.shape)
-    
-    icc_pot_mat = jnp.ones(model_dmat.shape)
-    domain_contact_loss = 0.0
-    
-    for i in range(copies):
-        for j in range(copies):
-            if i==j:
-                pair_weight_mat = pair_weight_mat.at[i*chain_len:(i+1)*chain_len,j*chain_len:(j+1)*chain_len].set(chain_self_weight)
-            else:
-                pair_weight_mat = pair_weight_mat.at[i*chain_len:(i+1)*chain_len,j*chain_len:(j+1)*chain_len].set(1.0 - jnp.abs(chain_self_weight))
-        
-    
-    
-    seq_dist_mask = 1.0*(jnp.square(jnp.arange(copies*chain_len).T[:,None]-jnp.arange(copies*chain_len).T[None,:]) > seq_cutoff**2 )
-    
-    contact_pot_mat = dist_potential(model_dmat+1e-8,w,r,n)
-    
-    all_score_mat = pair_weight_mat*contact_pot_mat*seq_dist_mask
-    
-    domain_contact_loss_val = jnp.sum(all_score_mat)/((chain_len**4)*(copies**2))
+	xyz_array = outputs["structure_module"]["final_atom_positions"][:,residue_constants.atom_order["CA"]]
+	copies=af_model._copies
+	chain_len=af_model._len
+	
+	model_dmat = jnp.square(xyz_array[:,None]-xyz_array[None,:]).sum(-1)
+	
+	pair_weight_mat = jnp.ones(model_dmat.shape)
+	
+	icc_pot_mat = jnp.ones(model_dmat.shape)
+	domain_contact_loss = 0.0
+	
+	for i in range(copies):
+		for j in range(copies):
+			if i==j:
+				pair_weight_mat = pair_weight_mat.at[i*chain_len:(i+1)*chain_len,j*chain_len:(j+1)*chain_len].set(chain_self_weight)
+			else:
+				pair_weight_mat = pair_weight_mat.at[i*chain_len:(i+1)*chain_len,j*chain_len:(j+1)*chain_len].set(1.0 - jnp.abs(chain_self_weight))
+		
+	
+	
+	seq_dist_mask = 1.0*(jnp.square(jnp.arange(copies*chain_len).T[:,None]-jnp.arange(copies*chain_len).T[None,:]) > seq_cutoff**2 )
+	
+	contact_pot_mat = dist_potential(model_dmat+1e-8,w,r,n)
+	
+	all_score_mat = pair_weight_mat*contact_pot_mat*seq_dist_mask
+	
+	domain_contact_loss_val = jnp.sum(all_score_mat)/((chain_len**4)*(copies**2))
 
 #     return domain_contact_loss
-    return {"domain_contact_loss": domain_contact_loss_val}
+	return {"domain_contact_loss": domain_contact_loss_val}
 
 
 
 
 def ss_spec_loss(inputs,outputs,opt):
 
-    chain_len = af_model._len
+	chain_len = af_model._len
 
-    copies= af_model._args["copies"]
+	copies= af_model._args["copies"]
 
-    dgram = outputs["distogram"]["logits"]
-    dgram_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
+	dgram = outputs["distogram"]["logits"]
+	dgram_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
 
-    resi_list, ss_list, bins = parse_ss_spec(ss_spec,outputs,chain_len,copies)
-
-
-    dgram_diag = jnp.diagonal(dgram,offset=3,axis1=0,axis2=1).T
-    buffer = jnp.zeros((3,dgram_diag.shape[-1]))
-    dgram_n3 = jnp.append(dgram_diag,buffer,axis=0)+jnp.append(buffer,dgram_diag,axis=0)
-
-    px = jax.nn.softmax(dgram_n3)
-
-    px_ = jax.nn.softmax(dgram_n3 - 1e7 * (1-bins)) 
-
-    con_loss_cat_ent = -(px_ * jax.nn.log_softmax(dgram_n3)).sum(-1)
-    con_loss_bin_ent = -jnp.log((bins * px + 1e-8).sum(-1))
-
-    loss_full = jnp.where(True, con_loss_bin_ent, con_loss_cat_ent)
+	resi_list, ss_list, bins = parse_ss_spec(ss_spec,outputs,chain_len,copies)
 
 
-    
-    ss_spec_loss_val = loss_full.mean()
-    # ss_spec_loss_val = loss_full.sum()
+	dgram_diag = jnp.diagonal(dgram,offset=3,axis1=0,axis2=1).T
+	buffer = jnp.zeros((3,dgram_diag.shape[-1]))
+	dgram_n3 = jnp.append(dgram_diag,buffer,axis=0)+jnp.append(buffer,dgram_diag,axis=0)
 
-    return {"ss_spec_loss":ss_spec_loss_val}
+	px = jax.nn.softmax(dgram_n3)
+
+	px_ = jax.nn.softmax(dgram_n3 - 1e7 * (1-bins)) 
+
+	con_loss_cat_ent = -(px_ * jax.nn.log_softmax(dgram_n3)).sum(-1)
+	con_loss_bin_ent = -jnp.log((bins * px + 1e-8).sum(-1))
+
+	loss_full = jnp.where(True, con_loss_bin_ent, con_loss_cat_ent)
+
+
+	
+	ss_spec_loss_val = loss_full.mean()
+	# ss_spec_loss_val = loss_full.sum()
+
+	return {"ss_spec_loss":ss_spec_loss_val}
 
