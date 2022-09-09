@@ -1,7 +1,7 @@
 
 import os
-# import colabdesign
-# from colabdesign import mk_afdesign_model, clear_mem
+import colabdesign
+from colabdesign import mk_afdesign_model, clear_mem
 from colabdesign.af.alphafold.common import residue_constants
 import jax
 import jax.numpy as jnp
