@@ -5,3 +5,8 @@ Resources
 
 
 
+# TO DO:
+
+Add biases for the aspect ratio loss
+
+
