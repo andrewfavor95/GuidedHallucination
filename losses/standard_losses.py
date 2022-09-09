@@ -15,6 +15,9 @@ from colabdesign.af.alphafold.common import residue_constants
 
 def xform_diff_loss(inputs,outputs,opt,center_coords=True):
 
+    copies = len(jnp.unique(inputs["sym_id"]))
+    chain_len = int(len(inputs["sym_id"])/copies)
+
 	pred = outputs["structure_module"]["final_atom_positions"][:,residue_constants.atom_order["CA"]]
 	
 	centroid = pred.mean(axis=0)
@@ -89,10 +92,14 @@ def domain_contact_loss(inputs,outputs,opt,
 	def dist_potential(x,w=0.075,r=4.8,n=1.5):
 		return ( (w*(x-r))*jnp.log(x/r)  )**n
 
+    copies = len(jnp.unique(inputs["sym_id"]))
+    chain_len = int(len(inputs["sym_id"])/copies)
 
+    
 	xyz_array = outputs["structure_module"]["final_atom_positions"][:,residue_constants.atom_order["CA"]]
-	copies=af_model._copies
-	chain_len=af_model._len
+	# copies=af_model._copies
+	# chain_len=af_model._len
+
 	
 	model_dmat = jnp.square(xyz_array[:,None]-xyz_array[None,:]).sum(-1)
 	
@@ -128,7 +135,9 @@ def ss_spec_loss(inputs,outputs,opt):
 
 	chain_len = af_model._len
 
-	copies= af_model._args["copies"]
+	# copies= af_model._args["copies"]
+    copies = len(jnp.unique(inputs["sym_id"]))
+    chain_len = int(len(inputs["sym_id"])/copies)
 
 	dgram = outputs["distogram"]["logits"]
 	dgram_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
