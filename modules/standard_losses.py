@@ -132,36 +132,71 @@ def domain_contact_loss(inputs,outputs,opt,
 
 
 def ss_spec_loss(inputs,outputs,opt):
+    
+    def ss_probs_for_bins(outputs,
+                      alpha_mu=5.1,
+                      alpha_sig=0.73,
+                      beta_mu=10.2,
+                      beta_sig=0.73):
 
-	chain_len = af_model._len
+        bin_lowers = jnp.append(0,outputs["distogram"]["bin_edges"])
+        bin_uppers = jnp.append(outputs["distogram"]["bin_edges"],1e3)
 
-	# copies= af_model._args["copies"]
-	copies = len(jnp.unique(inputs["sym_id"]))
-	chain_len = int(len(inputs["sym_id"])/copies)
+        P_ss_by_bin = {'helix':jax.scipy.stats.norm.cdf(bin_uppers, alpha_mu, alpha_sig) - jax.scipy.stats.norm.cdf(bin_lowers, alpha_mu, alpha_sig),
+                       'strand':jax.scipy.stats.norm.cdf(bin_uppers, beta_mu, beta_sig) - jax.scipy.stats.norm.cdf(bin_lowers, beta_mu, beta_sig)}
 
-	dgram = outputs["distogram"]["logits"]
-	dgram_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
-
-	resi_list, ss_list, bins = parse_ss_spec(ss_spec,outputs,chain_len,copies)
-
-
-	dgram_diag = jnp.diagonal(dgram,offset=3,axis1=0,axis2=1).T
-	buffer = jnp.zeros((3,dgram_diag.shape[-1]))
-	dgram_n3 = jnp.append(dgram_diag,buffer,axis=0)+jnp.append(buffer,dgram_diag,axis=0)
-
-	px = jax.nn.softmax(dgram_n3)
-
-	px_ = jax.nn.softmax(dgram_n3 - 1e7 * (1-bins)) 
-
-	con_loss_cat_ent = -(px_ * jax.nn.log_softmax(dgram_n3)).sum(-1)
-	con_loss_bin_ent = -jnp.log((bins * px + 1e-8).sum(-1))
-
-	loss_full = jnp.where(True, con_loss_bin_ent, con_loss_cat_ent)
+        return P_ss_by_bin
+  
 
 
-	
-	ss_spec_loss_val = loss_full.mean()
-	# ss_spec_loss_val = loss_full.sum()
+    def parse_ss_spec(ss_spec,outputs,chain_len,copies,helix_cutoff=6.0,sheet_cutoff=9.0):
 
-	return {"ss_spec_loss":ss_spec_loss_val}
+
+        P_ss_by_bin = ss_probs_for_bins(outputs)
+        dgram = outputs["distogram"]["logits"]
+
+        bin_ss_probs = jnp.ones((dgram.shape[0],dgram.shape[-1]))
+
+
+        for ss_spec_str_i in ss_spec:
+            ss_i = ss_spec_str_i.split(',')[0]
+            range_i = ss_spec_str_i.split(',')[-1]
+
+            for chain_ind in range(copies):
+                start_ind = (chain_ind*chain_len)+int(range_i.split(':')[0])-1
+                stop_ind = (chain_ind*chain_len)+int(range_i.split(':')[-1])
+
+                if ss_i=='H':
+                    bin_ss_probs = bin_ss_probs.at[start_ind:stop_ind,:].set(P_ss_by_bin["helix"])
+
+                elif ss_i=='S':
+                    bin_ss_probs = bin_ss_probs.at[start_ind:stop_ind,:].set(P_ss_by_bin["strand"])
+
+        return bin_ss_probs
+    
+    
+    chain_len = af_model._len
+    copies= af_model._args["copies"]
+
+    dgram = outputs["distogram"]["logits"]
+    dgram_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
+
+    bin_ss_probs = parse_ss_spec(ss_spec,outputs,chain_len,copies)
+
+    dgram_diag = jnp.diagonal(dgram,offset=3,axis1=0,axis2=1).T
+
+    dgram_smooth = jnp.zeros((dgram.shape[0],dgram.shape[-1]))
+    
+    for i in range(4):
+        dgram_smooth = dgram_smooth.at[i:chain_len+i-3,:].set((dgram_smooth[i:chain_len+i-3,:]+dgram_diag))
+
+    px = jax.nn.softmax(dgram_smooth) # probability of a given residue (axis 0) being in a given bin (axis 1)
+    
+    correct_ss_prob = (px*bin_ss_probs).sum(-1) # gives array where sum of axis -1 elements is probability of being in the CORRECT secondary structure
+    correct_ss_ent = -jnp.log(correct_ss_prob + 1e-8)
+
+    ss_spec_loss_val = correct_ss_ent.mean()
+
+    return {"ss_spec_loss":ss_spec_loss_val}
+
 
