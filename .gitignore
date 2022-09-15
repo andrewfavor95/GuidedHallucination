@@ -1,7 +1,6 @@
 ._README.md
-losses/._standard_losses.py
-utils/._helper_functions.py
+._*
 ._.DS_Store
 .DS_Store
-
+modules/._standard_losses.py
 
