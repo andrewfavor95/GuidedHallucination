@@ -14,30 +14,30 @@ import colabdesign
 from colabdesign import mk_afdesign_model, clear_mem
 from colabdesign.af.alphafold.common import residue_constants
 
-def parse_ss_spec(ss_spec,outputs,chain_len,copies,helix_cutoff=6.0,sheet_cutoff=9.0):
+# def parse_ss_spec(ss_spec,outputs,chain_len,copies,helix_cutoff=6.0,sheet_cutoff=9.0):
 
-    dgram = outputs["distogram"]["logits"]
-    dgram_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
+#     dgram = outputs["distogram"]["logits"]
+#     dgram_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
 
-    resi_list = []
-    ss_list = []
-    bins = jnp.full((dgram.shape[0],dgram.shape[-1]),True)
+#     resi_list = []
+#     ss_list = []
+#     bins = jnp.full((dgram.shape[0],dgram.shape[-1]),True)
 
 
-    for ss_spec_str_i in ss_spec:
-        ss_i = ss_spec_str_i.split(',')[0]
-        range_i = ss_spec_str_i.split(',')[-1]
+#     for ss_spec_str_i in ss_spec:
+#         ss_i = ss_spec_str_i.split(',')[0]
+#         range_i = ss_spec_str_i.split(',')[-1]
 
-        for chain_ind in range(copies):
-            start_ind = (chain_ind*chain_len)+int(range_i.split(':')[0])-1
-            stop_ind = (chain_ind*chain_len)+int(range_i.split(':')[-1])
+#         for chain_ind in range(copies):
+#             start_ind = (chain_ind*chain_len)+int(range_i.split(':')[0])-1
+#             stop_ind = (chain_ind*chain_len)+int(range_i.split(':')[-1])
 
-            if ss_i=='H':
-                bins = bins.at[start_ind:stop_ind,:].set(dgram_bins < helix_cutoff )
-            elif ss_i=='S':
-                bins = bins.at[start_ind:stop_ind,:].set(dgram_bins > sheet_cutoff )
+#             if ss_i=='H':
+#                 bins = bins.at[start_ind:stop_ind,:].set(dgram_bins < helix_cutoff )
+#             elif ss_i=='S':
+#                 bins = bins.at[start_ind:stop_ind,:].set(dgram_bins > sheet_cutoff )
 
-    return resi_list,ss_list,bins
+#     return resi_list,ss_list,bins
 
 
 def rot2quat(matrix, isprecise=False):
