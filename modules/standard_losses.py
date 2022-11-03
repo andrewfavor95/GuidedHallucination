@@ -294,23 +294,39 @@ def contact_spec_loss(inputs,outputs,contact_spec):
     #                                 )
 
     for (from_i,to_i),(from_j,to_j) in contact_range_list:
-
         contact_spec_loss_val += min_k(
                                     min_k(
                                         dist_potential(
                                             dm[from_i:to_i,from_j:to_j]+1e-8),
-                                        k=(to_j-from_j)), 
+                                        k=4), 
                                     k=(to_j-from_j)
                                     )
-
-
         contact_spec_loss_val += min_k(
                                     min_k(
                                         dist_potential(
                                             dm[from_j:to_j,from_i:to_i]+1e-8),
-                                        k=(to_i-from_i)), 
+                                        k=4), 
                                     k=(to_i-from_i)
                                     )
+
+    # for (from_i,to_i),(from_j,to_j) in contact_range_list:
+
+    #     contact_spec_loss_val += min_k(
+    #                                 min_k(
+    #                                     dist_potential(
+    #                                         dm[from_i:to_i,from_j:to_j]+1e-8),
+    #                                     k=(to_j-from_j)), 
+    #                                 k=(to_j-from_j)
+    #                                 )
+
+
+    #     contact_spec_loss_val += min_k(
+    #                                 min_k(
+    #                                     dist_potential(
+    #                                         dm[from_j:to_j,from_i:to_i]+1e-8),
+    #                                     k=(to_i-from_i)), 
+    #                                 k=(to_i-from_i)
+    #                                 )
     
     contact_spec_loss_val = contact_spec_loss_val/len(contact_range_list)
 
