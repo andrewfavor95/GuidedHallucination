@@ -138,7 +138,8 @@ def domain_contact_loss(inputs,outputs,opt,
 
 
 
-def ss_spec_loss(inputs,outputs,
+# def ss_spec_loss(inputs,outputs,
+def ss_spec_loss(inputs,outputs,ss_spec,
                  resi_buffer=2, # number of buffer residues to ignore when detecting secondary structure errors
                  helix_cutoff=6.0, # upper limit of distances between CA atoms of residue i and residue i+3 for alpha helices
                  sheet_cutoff=9.5  # lower limit of distances between CA atoms of residue i and residue i+3 for beta strands
@@ -223,7 +224,8 @@ def ss_spec_loss(inputs,outputs,
     
 
 
-def contact_spec_loss(inputs,outputs):
+# def contact_spec_loss(inputs,outputs):
+def contact_spec_loss(inputs,outputs,contact_spec):
 
     def parse_contact_spec(contact_spec,outputs,chain_len,copies):
 
