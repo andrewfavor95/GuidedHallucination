@@ -1,13 +1,18 @@
 
-
 import os
-import colabdesign
-from colabdesign import mk_afdesign_model, clear_mem
-from colabdesign.af.alphafold.common import residue_constants
+
+import pdb as pydebug
+import string
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
 import jax
 import jax.numpy as jnp
 
-
+import colabdesign
+from colabdesign import mk_afdesign_model, clear_mem
+from colabdesign.af.alphafold.common import residue_constants
 
 def parse_ss_spec(ss_spec,outputs,chain_len,copies,helix_cutoff=6.0,sheet_cutoff=9.0):
 
@@ -82,6 +87,17 @@ def rot2quat(matrix, isprecise=False):
 	q = jnp.where(flip, -q, q)
 
 	return q
+
+
+
+
+def get_model_num_spec(model_numbers):
+	model_num_list = []
+	for model_i in model_numbers.split(','):
+		model_num_list.append(int(model_i.strip())-1)
+		num_models = len(model_num_list)
+		
+	return model_num_list, num_models
 
 
 
