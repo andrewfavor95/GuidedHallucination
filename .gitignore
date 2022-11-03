@@ -4,3 +4,4 @@
 .DS_Store
 modules/._standard_losses.py
 ._standard_losses.py
+./modules/._standard_losses.py
