@@ -177,8 +177,8 @@ def ss_spec_loss(inputs,outputs,
     # chain_len = af_model._len
     # copies= af_model._args["copies"]
     # chain_len = inputs["residue_index"].shape[0]
-	copies = len(jnp.unique(inputs["sym_id"]))
-	chain_len = int(len(inputs["sym_id"])/copies)
+    copies = len(jnp.unique(inputs["sym_id"]))
+    chain_len = int(len(inputs["sym_id"])/copies)
 
     target_resis = jnp.zeros(chain_len)
 
@@ -255,8 +255,8 @@ def contact_spec_loss(inputs,outputs):
 
     # chain_len = af_model._len
     # copies= af_model._args["copies"]
-	copies = len(jnp.unique(inputs["sym_id"]))
-	chain_len = int(len(inputs["sym_id"])/copies)
+    copies = len(jnp.unique(inputs["sym_id"]))
+    chain_len = int(len(inputs["sym_id"])/copies)
 
     dist_logits = outputs["distogram"]["logits"]
     dist_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
