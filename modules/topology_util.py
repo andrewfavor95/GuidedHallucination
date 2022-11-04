@@ -243,3 +243,31 @@ def get_design_params(topo_string, N_tot=None,sse_scale=1.0,k=3,plot_diagram=Fal
   return ss_spec, sse_len, contact_spec, N_tot
 
 
+
+def parse_contact_spec(contact_spec,chain_len,copies=1):
+
+    contact_range_list = []
+    for contact_str_i in contact_spec:
+        row_range_i = contact_str_i.split(',')[0]
+        col_range_i = contact_str_i.split(',')[-1]
+
+        for chain_ind in range(copies):
+            row_start_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[0])-1
+            row_stop_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[-1])
+
+            col_start_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[0])-1
+            col_stop_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[-1])
+
+            contact_range_list.append(((row_start_ind,row_stop_ind ), (col_start_ind,col_stop_ind )))
+
+    return contact_range_list
+
+
+def get_contact_mask(contact_spec,N_tot):
+    contact_range_list = parse_contact_spec(contact_spec,N_tot)
+    m = jnp.zeros((N_tot,N_tot))
+    for (from_i,to_i),(from_j,to_j) in contact_range_list:
+        m = m.at[from_i:to_i, from_j:to_j].set(1)
+        m = m.at[from_j:to_j, from_i:to_i].set(1)
+
+    return m

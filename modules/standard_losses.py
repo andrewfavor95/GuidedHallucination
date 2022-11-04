@@ -224,41 +224,12 @@ def ss_spec_loss(inputs,outputs,ss_spec,
 
     
 
-
-# def contact_spec_loss(inputs,outputs):
-def contact_spec_loss(inputs,outputs,contact_spec):
-
-    def parse_contact_spec(contact_spec,outputs,chain_len,copies):
-
-        contact_range_list = []
-        for contact_str_i in contact_spec:
-            row_range_i = contact_str_i.split(',')[0]
-            col_range_i = contact_str_i.split(',')[-1]
-
-            for chain_ind in range(copies):
-                row_start_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[0])-1
-                row_stop_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[-1])
-
-                col_start_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[0])-1
-                col_stop_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[-1])
-
-                contact_range_list.append(((row_start_ind,row_stop_ind ), (col_start_ind,col_stop_ind )))
-
-        return contact_range_list
-
-
-    def min_k(x, k=1, mask=None):
-        y = jnp.sort(x if mask is None else jnp.where(mask,x,jnp.nan))
-        k_mask = jnp.logical_and(jnp.arange(y.shape[-1]) < k, jnp.isnan(y) == False)
-        return jnp.where(k_mask,y,0).sum(-1) / (k_mask.sum(-1) + 1e-8)
+def contact_spec_loss(inputs,outputs,contact_spec,mask):
 
 
     def dist_potential(x,w=0.1,r=7.5,n=2.5):
         return ( w*(x-r)*jnp.log(x/r)  )**n
 
-    # chain_len = af_model._len
-    # copies= af_model._args["copies"]
-    # copies = len(jnp.unique(inputs["sym_id"]))
     copies = 1
     chain_len = int(len(inputs["sym_id"])/copies)
 
@@ -268,85 +239,167 @@ def contact_spec_loss(inputs,outputs,contact_spec):
     px = jax.nn.softmax(dist_logits)
     dm = jnp.inner(px,dist_bins)
 
+    dm_pot = dist_potential(dm+1e-8)
 
-
-    contact_range_list = parse_contact_spec(contact_spec,outputs,chain_len,copies)
-
-    contact_spec_loss_val = jnp.square(0)
-
-    # for (from_i,to_i),(from_j,to_j) in contact_range_list:
-
-    #     contact_spec_loss_val += min_k(
-    #                                 min_k(
-    #                                     dist_potential(
-    #                                         dm[from_i:to_i,from_j:to_j]+1e-8),
-    #                                     k=2), 
-    #                                 k=(to_j-from_j)
-    #                                 )
-
-
-    #     contact_spec_loss_val += min_k(
-    #                                 min_k(
-    #                                     dist_potential(
-    #                                         dm[from_j:to_j,from_i:to_i]+1e-8),
-    #                                     k=2), 
-    #                                 k=(to_i-from_i)
-    #                                 )
-
-    # for (from_i,to_i),(from_j,to_j) in contact_range_list:
-    #     contact_spec_loss_val += min_k(
-    #                                 min_k(
-    #                                     dist_potential(
-    #                                         dm[from_i:to_i,from_j:to_j]+1e-8),
-    #                                     k=4), 
-    #                                 k=(to_j-from_j)
-    #                                 )
-    #     contact_spec_loss_val += min_k(
-    #                                 min_k(
-    #                                     dist_potential(
-    #                                         dm[from_j:to_j,from_i:to_i]+1e-8),
-    #                                     k=4), 
-    #                                 k=(to_i-from_i)
-    #                                 )
-    for (from_i,to_i),(from_j,to_j) in contact_range_list:
-        contact_spec_loss_val += min_k(
-                                    min_k(
-                                        dist_potential(
-                                            dm[from_i:to_i,from_j:to_j]+1e-8),
-                                        k=3), 
-                                    k=(to_j-from_j)
-                                    )
-        contact_spec_loss_val += min_k(
-                                    min_k(
-                                        dist_potential(
-                                            dm[from_j:to_j,from_i:to_i]+1e-8),
-                                        k=3), 
-                                    k=(to_i-from_i)
-                                    )
-
-    # for (from_i,to_i),(from_j,to_j) in contact_range_list:
-
-    #     contact_spec_loss_val += min_k(
-    #                                 min_k(
-    #                                     dist_potential(
-    #                                         dm[from_i:to_i,from_j:to_j]+1e-8),
-    #                                     k=(to_j-from_j)), 
-    #                                 k=(to_j-from_j)
-    #                                 )
-
-
-    #     contact_spec_loss_val += min_k(
-    #                                 min_k(
-    #                                     dist_potential(
-    #                                         dm[from_j:to_j,from_i:to_i]+1e-8),
-    #                                     k=(to_i-from_i)), 
-    #                                 k=(to_i-from_i)
-    #                                 )
     
-    contact_spec_loss_val = contact_spec_loss_val/len(contact_range_list)
+    contact_spec_loss_val = (dm_pot*mask).sum()/mask.sum()
+    
+
 
 
     return {"contact_spec_loss":contact_spec_loss_val }
 
 
+# # def contact_spec_loss(inputs,outputs):
+# def contact_spec_loss(inputs,outputs,contact_spec,mask):
 
+#     # def parse_contact_spec(contact_spec,outputs,chain_len,copies=1):
+#     def parse_contact_spec(contact_spec,chain_len,copies=1):
+
+#         contact_range_list = []
+#         for contact_str_i in contact_spec:
+#             row_range_i = contact_str_i.split(',')[0]
+#             col_range_i = contact_str_i.split(',')[-1]
+
+#             for chain_ind in range(copies):
+#                 row_start_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[0])-1
+#                 row_stop_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[-1])
+
+#                 col_start_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[0])-1
+#                 col_stop_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[-1])
+
+#                 contact_range_list.append(((row_start_ind,row_stop_ind ), (col_start_ind,col_stop_ind )))
+
+#         return contact_range_list
+
+
+#     def min_k(x, k=1, mask=None):
+#         y = jnp.sort(x if mask is None else jnp.where(mask,x,jnp.nan))
+#         k_mask = jnp.logical_and(jnp.arange(y.shape[-1]) < k, jnp.isnan(y) == False)
+#         return jnp.where(k_mask,y,0).sum(-1) / (k_mask.sum(-1) + 1e-8)
+
+
+#     def dist_potential(x,w=0.1,r=7.5,n=2.5):
+#         return ( w*(x-r)*jnp.log(x/r)  )**n
+
+#     # chain_len = af_model._len
+#     # copies= af_model._args["copies"]
+#     # copies = len(jnp.unique(inputs["sym_id"]))
+#     copies = 1
+#     chain_len = int(len(inputs["sym_id"])/copies)
+
+#     dist_logits = outputs["distogram"]["logits"]
+#     dist_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
+
+#     px = jax.nn.softmax(dist_logits)
+#     dm = jnp.inner(px,dist_bins)
+
+
+
+#     contact_range_list = parse_contact_spec(contact_spec,outputs,chain_len,copies)
+
+#     contact_spec_loss_val = jnp.square(0)
+
+#     # for (from_i,to_i),(from_j,to_j) in contact_range_list:
+
+#     #     contact_spec_loss_val += min_k(
+#     #                                 min_k(
+#     #                                     dist_potential(
+#     #                                         dm[from_i:to_i,from_j:to_j]+1e-8),
+#     #                                     k=2), 
+#     #                                 k=(to_j-from_j)
+#     #                                 )
+
+
+#     #     contact_spec_loss_val += min_k(
+#     #                                 min_k(
+#     #                                     dist_potential(
+#     #                                         dm[from_j:to_j,from_i:to_i]+1e-8),
+#     #                                     k=2), 
+#     #                                 k=(to_i-from_i)
+#     #                                 )
+
+#     # for (from_i,to_i),(from_j,to_j) in contact_range_list:
+#     #     contact_spec_loss_val += min_k(
+#     #                                 min_k(
+#     #                                     dist_potential(
+#     #                                         dm[from_i:to_i,from_j:to_j]+1e-8),
+#     #                                     k=4), 
+#     #                                 k=(to_j-from_j)
+#     #                                 )
+#     #     contact_spec_loss_val += min_k(
+#     #                                 min_k(
+#     #                                     dist_potential(
+#     #                                         dm[from_j:to_j,from_i:to_i]+1e-8),
+#     #                                     k=4), 
+#     #                                 k=(to_i-from_i)
+#     #                                 )
+#     for (from_i,to_i),(from_j,to_j) in contact_range_list:
+#         contact_spec_loss_val += min_k(
+#                                     min_k(
+#                                         dist_potential(
+#                                             dm[from_i:to_i,from_j:to_j]+1e-8),
+#                                         k=3), 
+#                                     k=(to_j-from_j)
+#                                     )
+#         contact_spec_loss_val += min_k(
+#                                     min_k(
+#                                         dist_potential(
+#                                             dm[from_j:to_j,from_i:to_i]+1e-8),
+#                                         k=3), 
+#                                     k=(to_i-from_i)
+#                                     )
+
+#     # for (from_i,to_i),(from_j,to_j) in contact_range_list:
+
+#     #     contact_spec_loss_val += min_k(
+#     #                                 min_k(
+#     #                                     dist_potential(
+#     #                                         dm[from_i:to_i,from_j:to_j]+1e-8),
+#     #                                     k=(to_j-from_j)), 
+#     #                                 k=(to_j-from_j)
+#     #                                 )
+
+
+#     #     contact_spec_loss_val += min_k(
+#     #                                 min_k(
+#     #                                     dist_potential(
+#     #                                         dm[from_j:to_j,from_i:to_i]+1e-8),
+#     #                                     k=(to_i-from_i)), 
+#     #                                 k=(to_i-from_i)
+#     #                                 )
+    
+#     contact_spec_loss_val = contact_spec_loss_val/len(contact_range_list)
+
+
+#     return {"contact_spec_loss":contact_spec_loss_val }
+
+
+
+def parse_contact_spec(contact_spec,chain_len,copies=1):
+
+    contact_range_list = []
+    for contact_str_i in contact_spec:
+        row_range_i = contact_str_i.split(',')[0]
+        col_range_i = contact_str_i.split(',')[-1]
+
+        for chain_ind in range(copies):
+            row_start_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[0])-1
+            row_stop_ind = (chain_ind * chain_len) + int(row_range_i.split(':')[-1])
+
+            col_start_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[0])-1
+            col_stop_ind = (chain_ind * chain_len) + int(col_range_i.split(':')[-1])
+
+            contact_range_list.append(((row_start_ind,row_stop_ind ), (col_start_ind,col_stop_ind )))
+
+    return contact_range_list
+
+
+def get_contact_mask(contact_spec,N_tot):
+    contact_range_list = parse_contact_spec(contact_spec,N_tot)
+    m = jnp.zeros((N_tot,N_tot))
+    for (from_i,to_i),(from_j,to_j) in contact_range_list:
+        m = m.at[from_i:to_i, from_j:to_j].set(1)
+        m = m.at[from_j:to_j, from_i:to_i].set(1)
+
+    return m
