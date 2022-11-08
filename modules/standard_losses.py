@@ -247,7 +247,7 @@ def ss_spec_loss(inputs,outputs,ss_spec,
 
 
 
-    return {"contact_spec_loss":contact_spec_loss_val }
+    # return {"contact_spec_loss":contact_spec_loss_val }
 
 
 # # def contact_spec_loss(inputs,outputs):
