@@ -422,17 +422,17 @@ def contact_spec_loss(inputs,outputs,contact_spec,mask):
     # NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW 
     # NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW 
     # NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW 
-    # NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW 
-    copies = 1
-    chain_len = int(len(inputs["sym_id"])/copies)
+    # # NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW  NEW NEW NEW 
+    # copies = 1
+    # chain_len = int(len(inputs["sym_id"])/copies)
 
-    dist_logits = outputs["distogram"]["logits"]
-    dist_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
+    # dist_logits = outputs["distogram"]["logits"]
+    # dist_bins = jnp.append(0,outputs["distogram"]["bin_edges"])
 
-    px = jax.nn.softmax(dist_logits)
-    dm = jnp.inner(px,dist_bins)
+    # px = jax.nn.softmax(dist_logits)
+    # dm = jnp.inner(px,dist_bins)
 
-    dm_pot = dist_potential(dm+1e-8)
+    # dm_pot = dist_potential(dm+1e-8)
 
     # OLD OLD OLD  OLD OLD OLD  OLD OLD OLD  OLD OLD OLD  OLD OLD OLD 
     # OLD OLD OLD  OLD OLD OLD  OLD OLD OLD  OLD OLD OLD  OLD OLD OLD 
@@ -456,7 +456,7 @@ def contact_spec_loss(inputs,outputs,contact_spec,mask):
 
     contact_spec_loss_val = jnp.square(0)
 
-    for (from_i,to_i),(from_j,to_j) in contact_range_list:
+    # for (from_i,to_i),(from_j,to_j) in contact_range_list:
 
         # contact_spec_loss_val += min_k(
         #                             min_k(
