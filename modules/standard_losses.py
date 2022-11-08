@@ -242,7 +242,7 @@ def contact_spec_loss(inputs,outputs,contact_spec,mask):
     dm_pot = dist_potential(dm+1e-8)
 
     
-    contact_spec_loss_val = (dm_pot*mask).sum()/mask.sum()
+    contact_spec_loss_val = 0.5*((dm_pot*mask).sum()/mask.sum())
     
 
 
